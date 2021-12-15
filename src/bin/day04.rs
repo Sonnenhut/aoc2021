@@ -1,39 +1,49 @@
 use aoc2021::read_lines;
 
 fn main() {
-    //let input = read_lines(3).iter().map(|x| u32::from_str_radix(x, 2).unwrap()).collect();
-    //println!("pt1: {}", pt1(&input)); // 3959450
-    //println!("pt2: {}", pt2(&input)); // 7440311
+    let (nums, boards) = parse_input(&read_lines(4));
+    let (pt1, pt2) = solve(nums, boards);
+    println!("pt1: {}", pt1); // 25023
+    println!("pt2: {}", pt2); // 2634
 }
 
-fn pt1(nums: Vec<u8>, boards_immut: Vec<u8>) -> u32 {
+fn solve(nums: Vec<u8>, boards_immut: Vec<u8>) -> (u32, u32) {
     let mut boards: Vec<(u8, bool)> = boards_immut.clone().iter()
         .map(|poss| (*poss, false))
         .collect();
-    let (winning_num, winner_board) = pt1_find_winner_board(nums, &mut boards).unwrap();
-    let unmarked_sum: u32 = winner_board.iter().filter(|(_,pred)|!*pred).map(|(num,_)|*num as u32).sum();
-    winning_num as u32 * unmarked_sum
+    let bingo_boards = pt1_find_winner_board(nums, &mut boards);
+    let mut bingo_products = bingo_boards
+        .iter()
+        .map(|(win_num, board)|{
+            let unmatched_sum: u32 = board.iter().filter(|(_,pred)|!*pred).map(|(num,_)|*num as u32).sum();
+            *win_num as u32 * unmatched_sum
+        });
+    (bingo_products.next().unwrap(), bingo_products.last().unwrap())
 }
 
-fn pt1_find_winner_board(nums: Vec<u8>, boards: &mut Vec<(u8, bool)>) -> Option<(u8, Vec<(u8, bool)>)> {
+fn pt1_find_winner_board(nums: Vec<u8>, boards: &mut Vec<(u8, bool)>) -> Vec<(u8, Vec<(u8, bool)>)> {
     let board_num_cnt = 5*5;
+    let mut bingos: Vec<(u8, Vec<(u8, bool)>)> = vec![];
+    let mut bingo_indexes: Vec<usize> = vec![];
+
     for num in nums {
-        for idx in (0..boards.len()).step_by(board_num_cnt) {
+        let ignore_indexes = bingo_indexes.clone();
+        let indexes = (0..boards.len())
+            .step_by(board_num_cnt)
+            .filter(|n| !ignore_indexes.contains(&n));
+        for idx in indexes {
             let board = &mut boards[idx..(idx + board_num_cnt)];
             set_on_board(num, board);
             if is_bingo(board) {
-                println!("BINDO");
-                println!("{:?}", board);
-                return Some((num, board.to_vec()));
+                bingos.push((num, board.to_vec()));
+                bingo_indexes.push(idx)
             }
         }
     }
-    None
+    bingos
 }
 
 fn is_bingo(board: &[(u8, bool)]) -> bool {
-    // check rows
-
     let dimension = 5;
 
     let max_checked_rows= board.chunks(dimension)
@@ -48,8 +58,6 @@ fn is_bingo(board: &[(u8, bool)]) -> bool {
     }
     let max_checked_cols = *col_cnts.iter().max().unwrap();
 
-    //println!("rows : {}; cols: {}", max_checked_rows, max_checked_cols);
-    //println!("rows chunks : {:?}; ", board.chunks(dimension).collect::<Vec<&[(u8, bool)]>>());
     max_checked_rows == 5 || max_checked_cols == 5
 }
 
@@ -104,9 +112,9 @@ mod test {
  2  0 12  3  7".split("\n").map(|x| x.to_string()).collect();
 
         let (test_nums, test_boards) = parse_input(&test_input);
-        assert_eq!(pt1(test_nums, test_boards), 4512);
+        assert_eq!(solve(test_nums, test_boards), (4512, 1924));
 
         let (nums, boards) = parse_input(&read_lines(4));
-        assert_eq!(pt1(nums, boards), 25023);
+        assert_eq!(solve(nums, boards), (25023, 2634));
     }
 }
