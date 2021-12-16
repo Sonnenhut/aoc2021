@@ -1,6 +1,5 @@
 use aoc2021::read_lines;
 use std::collections::HashSet;
-use std::time::SystemTime;
 
 fn main() {
     let lines = read_lines(5);
