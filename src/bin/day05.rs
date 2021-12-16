@@ -1,34 +1,35 @@
 use aoc2021::read_lines;
 use std::collections::HashSet;
-use std::cmp::min;
-
+use std::time::SystemTime;
 
 fn main() {
-    //let (nums, boards) = parse_input(&read_lines(4));
-    //let (pt1, pt2) = solve(nums, boards);
-    //println!("pt1: {}", pt1); // 25023
-    //println!("pt2: {}", pt2); // 2634
+    let lines = read_lines(5);
+    let (pt1, pt2) = solve(&lines);
+
+    println!("pt1: {}", pt1); // 5145
+    println!("pt2: {}", pt2); // 16518
 }
 
-fn pt1(raw_inputs: Vec<String>) -> usize {
+fn solve(raw_inputs: &Vec<String>) -> (usize, usize) {
     let lines : Vec<Line> = raw_inputs.iter()
         .map(|line| parse_string(line))
-        .filter(|line| line.is_horizontal_vertical())
         .collect();
-    let mut allpoints = HashSet::new();
-    let mut duppoints = HashSet::new();
+    let mut pt1 = HashSet::new();
+    let mut pt1dups = HashSet::new();
+    let mut pt2 = HashSet::new();
+    let mut pt2dups = HashSet::new();
     for line in lines {
         for point in line.points() {
-            if !allpoints.insert(point) {
-                duppoints.insert(point);
+            if line.is_horizontal_vertical() && !pt1.insert(point) {
+                pt1dups.insert(point);
+            }
+            if !pt2.insert(point) {
+                pt2dups.insert(point);
             }
         }
     }
-    //println!("{:?}", duppoints);
-    duppoints.len()
+    (pt1dups.len(), pt2dups.len())
 }
-
-
 
 fn parse_string(line: &String)  -> Line {
     let mut parts = line.split(" -> ");
@@ -47,44 +48,28 @@ struct Line {
 }
 
 impl Line {
-    fn intersection(&self, other: &Line) -> HashSet<(usize, usize)> {
-        let mut res = HashSet::new();
-        for me in self.points() {
-            for you in other.points() {
-                if me == you {
-                    res.insert(me);
-                }
-            }
-        }
-        res
-    }
-
     fn points(&self) -> HashSet<(usize, usize)> {
-        let mut res = HashSet::new();
-        //println!("LINE! {:?}", self);
+        // poor mans approach to get all points of a line segment...
 
-        if self.start.0 == self.end.0 {
-            //println!("atl calc!");
-            let ymin = self.start.1.min(self.end.1);
-            let ymax = self.start.1.max(self.end.1);
+        let mut res = HashSet::new();
+        let ((x1, y1), (x2,y2)) = (self.start, self.end);
+
+        if self.start.0 == self.end.0 { // edgecase when on the same x-axis would divide by zero!
+            let ymin = y1.min(y2);
+            let ymax = y1.max(y2);
             for y in ymin ..= ymax {
-                //println!("point {:?}", (self.start.0, y));
-                res.insert((self.start.0,y));
+                res.insert((self.start.0, y));
             }
         } else {
             // Calc points in line with y = mx + c;
-            let m0 = (self.start.1 as isize - self.end.1 as isize);
-            let m1 = (self.start.0 as isize - self.end.0 as isize);
-            let m = m0 / m1;
-            let c = self.start.1 as isize - self.start.0 as isize * m;
+            let m = (y1 as isize - y2 as isize) / (x1 as isize - x2 as isize);
+            let c = y1 as isize - x1 as isize * m;
 
-            let minx = self.start.0.min(self.end.0);
-            let maxx = self.start.0.max(self.end.0);
-
+            let minx = x1.min(x2);
+            let maxx = x1.max(x2);
 
             for x in minx ..= maxx {
                 res.insert((x, (m * x as isize + c) as usize));
-                //println!("point {:?}", (x, (m * x as isize + c) as usize))
             }
         }
         res
@@ -113,9 +98,9 @@ mod test {
 3,4 -> 1,4
 0,0 -> 8,8
 5,5 -> 8,2".split("\n").map(|x| x.to_string()).collect();
-        assert_eq!(pt1(test_input), 5);
+        assert_eq!(solve(&test_input).0, 5);
 
         let lines = read_lines(5);
-        assert_eq!(pt1(lines), 5145);
+        assert_eq!(solve(&lines), (5145, 16518));
     }
 }
