@@ -3,23 +3,47 @@ use std::collections::HashSet;
 use aoc2021::read_lines;
 
 fn main() {
-    /*
-    let input = read_lines(8);
-    println!("pt1: {}", pt1(&input)); // 416
-    println!("pt2: {}", pt2(&input)); // 1043697
-
-     */
+    let input = read_lines(9);
+    println!("pt1: {}", pt1(&input)); // 588
+    println!("pt2: {}", pt2(&input)); // 964712
 }
 
 fn pt1(input: &Vec<String>) -> usize {
     let ground = parse(input);
-    let dimensions = (ground[0].len(), ground.len());
 
     let mut res = 0;
     for (x,y) in find_lowest_points(&ground) {
         res += ground[y][x] + 1;
     }
     res
+}
+
+fn pt2(input: &Vec<String>) -> usize {
+    let ground = parse(input);
+    let mut basin_sizes = find_lowest_points(&ground)
+        .into_iter()
+        .map(|point| basin_size(&ground, point))
+        .collect::<Vec<_>>();
+    basin_sizes.sort_by(|a, b| b.cmp(a));
+    basin_sizes[0..3].iter().fold(1, |acc, num| acc * num)
+}
+
+fn basin_size(ground: &Vec<Vec<usize>>, initial: (usize, usize)) -> usize {
+    let dimensions = (ground[0].len(), ground.len());
+
+    let mut basin = vec![];
+    let mut to_visit = vec![initial];
+    let mut visited = HashSet::new();
+
+    while let Some((x, y)) = to_visit.pop() {
+        if ground[y][x] != 9 && !visited.contains(&(x,y)){
+            basin.push((x,y));
+            to_visit.extend(around((x, y), dimensions));
+        }
+        visited.insert((x,y));
+    }
+
+    basin.len()
 }
 
 fn parse(input: &Vec<String>) -> Vec<Vec<usize>>{
@@ -71,8 +95,10 @@ mod test {
 8767896789
 9899965678".split("\n").map(|x| x.to_string()).collect();
         assert_eq!(pt1(&test_input), 15);
+        assert_eq!(pt2(&test_input), 1134);
 
         let input = read_lines(9);
         assert_eq!(pt1(&input), 588);
+        assert_eq!(pt2(&input), 964712);
     }
 }
