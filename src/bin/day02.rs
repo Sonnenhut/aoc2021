@@ -28,7 +28,7 @@ fn parse_direction_pt1(instruction: &String) -> (i64, i64) {
 }
 
 fn pt2(directions: &Vec<String>) -> i64 {
-    let (x, y, aim) = directions.into_iter()
+    let (x, y, _) = directions.into_iter()
         .fold((0, 0, 0),|acc, curr|  {
             let diff = parse_direction_pt2(curr, acc.2);
             (acc.0 + diff.0 ,acc.1 + diff.1, acc.2 + diff.2)
